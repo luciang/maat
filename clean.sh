@@ -1,2 +1,2 @@
-find . -name "*~" | xargs rm
-find . -name "*.pyc" | xargs rm
+find . -name "*~" -exec rm {} \;
+find . -name "*.pyc" -exec rm {} \;
