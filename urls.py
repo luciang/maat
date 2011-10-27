@@ -9,8 +9,12 @@ admin.autodiscover()
 
 urlpatterns = patterns('',
     # Examples:
-    #url(r'^$', 'maat.storer.views.home', name='home'), #TODO: name='XXX'???
-    #(r'^assignment/(.*)/$', 'maat.storer.views.assignment_details'),
+    (r'^$', 'maat.storer.views.home'),
+    (r'^accounts/login/$', 'django.contrib.auth.views.login', { 'template_name' : 'storer/templates/login.html' }),
+    (r'^accounts/logout/$', 'django.contrib.auth.views.logout'),
+    (r'^assignment/(?P<ass_name>[^/]+)/$', 'maat.storer.views.assignment_form'),
+    (r'^assignment/(?P<ass_name>[^/]+)/(?P<username>[^/]+)/$', 'maat.storer.views.current_submission'),
+    (r'^assignment/(?P<ass_name>[^/]+)/(?P<username>[^/]+)/(?P<subm_id>[^/]+)/$', 'maat.storer.views.submission'),
 
     # url(r'^maat/', include('maat.foo.urls')),
 

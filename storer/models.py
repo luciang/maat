@@ -1,5 +1,9 @@
 from django.db import models
+from django.contrib.auth.models import User
 
+
+
+_fmt = "%a %d %b %Y %H:%M:%S" # Sat 15 Oct 2011 12:59:52
 
 class Misc(models.Model):
     '''Some misc configurations that don't belong elsewhere. Only the
@@ -21,8 +25,7 @@ class HolidayInterval(models.Model):
     stop  = models.DateTimeField(help_text='End of a holiday')
 
     def __unicode__(self):
-        fmt = "%a %d %b %Y %H:%M:%S" # Sat 15 Oct 2011 12:59:52
-        return u'%s (%s - %s)' % (self.name, self.start.strftime(fmt), self.stop.strftime(fmt))
+        return u'%s (%s - %s)' % (self.name, self.start.strftime(_fmt), self.stop.strftime(_fmt))
 
 
 class UploadActiveInterval(models.Model):
@@ -30,8 +33,7 @@ class UploadActiveInterval(models.Model):
     start = models.DateTimeField(help_text='Start of a period from which the students can submit homework')
     stop  = models.DateTimeField(help_text='The end of the period')
     def __unicode__(self):
-        fmt = "%a %d %b %Y %H:%M:%S" # Sat 15 Oct 2011 12:59:52
-        return u'Upload active between: %s - %s' % (self.start.strftime(fmt), self.stop.strftime(fmt))
+        return u'Upload active between: %s - %s' % (self.start.strftime(_fmt), self.stop.strftime(_fmt))
 
 
 class TesterVM(models.Model):
@@ -57,7 +59,7 @@ class Assignment(models.Model):
     '''Configuration for an assignment'''
     order_number = models.PositiveIntegerField(help_text='The number of this assignment (used to order assignments)',
                                        unique=True)
-    name         = models.CharField(max_length=200,
+    name         = models.CharField(primary_key=True, max_length=200,
                                     help_text='Keyword identifying the assignment (e.g. "backtracking-1")')
     deadline     = models.DateTimeField(help_text='''Deadline for the assignment. Student can still upload
                                                     homework after deadline, but a penalty is deducted as
@@ -87,8 +89,7 @@ class Assignment(models.Model):
 
 class Submission(models.Model):
     '''Table of all submissions'''
-    username    = models.CharField(max_length=200,
-                                   help_text='The name of the user that created this submission')
+    user        = models.ForeignKey(User, help_text='User who submitted this')
     assignment  = models.ForeignKey(Assignment, related_name='submissions',
                                     help_text='For which assignment is this submission')
     upload_time = models.DateTimeField(help_text='Date+time of upload')
@@ -96,20 +97,31 @@ class Submission(models.Model):
     evaluated   = models.BooleanField(help_text='Have the evaluation results arrived?')
     grade       = models.DecimalField(decimal_places=3, max_digits=10, blank=True,
                                       null=True, help_text='The grade of the submission')
+    def state(self):
+        if not self.evaluated:
+            return u'not-evaluated'
+        if self.grade:
+            return u'not-graded'
+        return unicode(self.grade)
 
+    def __unicode__(self):
+        return u'Submission(user=%s,assignment=%s,state=%s,upload-time=%s)' % (
+            self.user.username, self.assignment.name, self.state(), self.upload_time.strftime(_fmt))
 
 class CurrentSubmission(models.Model):
     '''The user can upload the same homework multiple times. Only a
     single submission entry will be part of this table (normally the
     last one). In case the student wants to cancel a submission he can
     set the current submission to be a previous one.'''
-    username   = models.CharField(max_length=200, help_text='The name of the user that created this submission')
+    user       = models.ForeignKey(User, help_text='User who submitted this')
     assignment = models.ForeignKey(Assignment, related_name='current_submissions',
                                    help_text='For which assignment is this submission')
     submission = models.ForeignKey(Submission, related_name='current_submissions',
                                    help_text='Submission for which this grade is given')
     class Meta:
-        unique_together = (('username', 'assignment'),)
+        unique_together = ('user', 'assignment')
+    def __unicode__(self):
+        return u'Current' + unicode(self.submission)
 
 
 

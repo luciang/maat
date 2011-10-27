@@ -1,0 +1,42 @@
+<html>
+  <body>
+    <div id='assignments'>
+      Assignments:
+      <ol>
+	{% for assignment in assignments %}
+	<li> <a href='assignment/{{ assignment.name }}'>{{ assignment.name }}</a></li>
+	{% endfor %}
+      </ol>
+    </div>
+
+
+    <div id='grades'>
+      Grades:
+      <table border='1'>
+	<thead>
+	  <tr>
+	    <th>user</th>
+	    {% for assignment in assignments %}
+	    <th>{{ assignment.name }}</th>
+	    {% endfor %}
+	  </tr>
+	</thead>
+
+	{{ grades }}
+	<tbody>
+	  {% for row in grades %}
+	  <tr>
+	    {% for ass in row %}
+	    <td>
+	      {% if ass %}
+	      {{ ass }}
+	      {% endif %}
+	    </td>
+	    {% endfor %}
+	  </tr>
+	  {% endfor %}
+	</tbody>
+      </table>
+    </div>
+  </body>
+</html>
