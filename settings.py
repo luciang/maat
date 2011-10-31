@@ -98,12 +98,15 @@ TEMPLATE_LOADERS = (
 #     'django.template.loaders.eggs.Loader',
 )
 
+
+
 MIDDLEWARE_CLASSES = (
     'django.middleware.common.CommonMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
+    'django.middleware.transaction.TransactionMiddleware',
 )
 
 ROOT_URLCONF = 'maat.urls'
@@ -126,6 +129,8 @@ INSTALLED_APPS = (
     'django.contrib.admin',
     # Uncomment the next line to enable admin documentation:
     'django.contrib.admindocs',
+
+
 
     # maat specifics
     'maat.storer',
@@ -153,3 +158,24 @@ LOGGING = {
         },
     }
 }
+
+
+
+if DEBUG:
+    # debug toolbar:
+    INTERNAL_IPS = ('127.0.0.1',)
+    # add it to the front of middleware-classes but be careful about GZIP encoders
+    MIDDLEWARE_CLASSES = ('debug_toolbar.middleware.DebugToolbarMiddleware',) + MIDDLEWARE_CLASSES
+    INSTALLED_APPS += ('debug_toolbar',)
+
+
+# django-celery
+
+INSTALLED_APPS += ("djcelery", )
+import djcelery
+djcelery.setup_loader()
+BROKER_HOST = "localhost"
+BROKER_PORT = 5672
+BROKER_USER = "guest"
+BROKER_PASSWORD = "guest"
+BROKER_VHOST = "/"

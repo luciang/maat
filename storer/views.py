@@ -1,5 +1,6 @@
 # Create your views here.
 
+import datetime
 from collections import OrderedDict
 
 from django.http import HttpResponseRedirect
@@ -12,7 +13,8 @@ from django.db import transaction
 from maat.storer.models import Assignment, CurrentSubmission, Submission
 from maat.storer.forms import AssignmentSubmissionForm
 from maat.storer.shortcuts import render_to, update_or_create
-
+from maat.storer.misc import save_file, save_submission_and_log_exception
+from maat.storer.tasks import delayed_submission_processing
 
 @render_to('home.html')
 def home(request):
@@ -31,24 +33,41 @@ def home(request):
         row = [ None ] * (len(assignments) + 1)
         row[0] = username
         for ass_name, sub in ass_dict.items():
-            row[ass_idx[ass_name] + 1] = sub.state()
+            row[ass_idx[ass_name] + 1] = sub.short_desc()
         grades.append(row)
     return { 'grades' : grades, 'assignments' : assignments }
 
 
+@save_submission_and_log_exception
+def _process_uploaded_submission(src_file, sub):
+    '''Save a the file and queue it for later processing'''
+    save_file(sub, src_file)
+    delayed_submission_processing.delay(sub.id)
+
+@render_to('assignment_form.html')
+@transaction.commit_on_success
 @login_required
 def assignment_form(request, ass_name):
     ass = get_object_or_404(Assignment, name=ass_name)
     if request.method == 'POST':
         form = AssignmentSubmissionForm(request.POST, request.FILES)
         if form.is_valid():
-            cd = form.cleaned_data
-            sub = Submission.objects.create(user=request.user, assignment=ass,
-                                            upload_file=cd['file'],
-                                            evaluated=False, grade=None)
-            update_or_create(CurrentSubmission,
-                             { 'user': request.user, 'assignment': ass },
-                             { 'submission': sub })
+            uploaded_file = form.cleaned_data['file']
+            try:
+                sub = Submission.objects.create(user=request.user, assignment=ass,
+                                                upload_time=datetime.datetime.now(),
+                                                state=Submission.STATE_NEW, message='', grade=None)
+                update_or_create(CurrentSubmission,
+                                 { 'user': request.user, 'assignment': ass },
+                                 { 'submission': sub })
+            except:
+                transaction.rollback()
+                raise
+            # need to commit manually to prevent race with celery
+            # see http://ask.github.com/celery/userguide/tasks.html#database-transactions
+            transaction.commit()
+            _process_uploaded_submission(uploaded_file, sub=sub)
+
             # response: redirect relative to the current assignment to
             # the page of the user: assignment/$(assignment-code)/$(user-name)
             return HttpResponseRedirect(request.user.username)
@@ -56,7 +75,8 @@ def assignment_form(request, ass_name):
     form = AssignmentSubmissionForm()
     c = { 'assignment' : ass, 'form' : form }
     c.update(csrf(request))
-    return render_to_response('assignment_form.html', c)
+    transaction.commit()
+    return c
 
 
 @render_to('current_submission.html')

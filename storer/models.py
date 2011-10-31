@@ -1,3 +1,5 @@
+import os.path
+
 from django.db import models
 from django.contrib.auth.models import User
 
@@ -57,25 +59,31 @@ def upload_tests_to(instance, filename):
 
 class Assignment(models.Model):
     '''Configuration for an assignment'''
-    order_number = models.PositiveIntegerField(help_text='The number of this assignment (used to order assignments)',
-                                       unique=True)
-    name         = models.CharField(primary_key=True, max_length=200,
-                                    help_text='Keyword identifying the assignment (e.g. "backtracking-1")')
-    deadline     = models.DateTimeField(help_text='''Deadline for the assignment. Student can still upload
-                                                    homework after deadline, but a penalty is deducted as
-                                                    described bellow''')
-    tests        = models.FileField(upload_to=upload_tests_to, max_length=512,
+    DEFAULT_MAX_FILE_SIZE = 1024 * 1024 # 1 MiB
+    DEFAULT_MAX_POINTS = 10 # A good grade gets by default 10 points
+    DEFAULT_TIMEOUT_SEC = 120
+
+    order_number = models.PositiveIntegerField(help_text='Used for ordering. Must be unique and >= 0',
+                                               unique=True)
+    name = models.CharField(primary_key=True, max_length=200,
+                            help_text='Keyword identifying the assignment (e.g. "backtracking-1")')
+    deadline = models.DateTimeField(help_text='''Deadline for the assignment. Student can still upload
+                                    homework after deadline, but a penalty is deducted (see bellow)''')
+    tests = models.FileField(upload_to=upload_tests_to, max_length=512,
                                     help_text='Tests for this assignment')
-    timeout_sec  = models.PositiveIntegerField(help_text='''Number of seconds of test run time after
-                                                    which tests are considered to never
-                                                    finish and execution is terminated''')
-    max_points   = models.DecimalField(decimal_places=3, max_digits=10,
-                                       help_text='Number of points (grade) for a perfect submission')
-    penalty      = models.CharField(max_length=200, help_text='''Penalty formula for late submissions.
-                                    Must be of this form <b>'[(p1, n1), (p2,n2), ...]'</b>. <br>
-                                    Meaning: first n1 days subtract p1 points for each day,
-                                              next <b>n2</b> days subtract p2 points for each day, etc.''')
-    test_vms     = models.ManyToManyField(TesterVM, help_text='TestVMs to use for this assignment')
+    timeout_sec = models.PositiveIntegerField(default=DEFAULT_TIMEOUT_SEC,
+                                              help_text='''Number of seconds of test run time after
+                                              which tests are considered to never finish and execution
+                                              is terminated''')
+    max_points = models.DecimalField(decimal_places=3, max_digits=10, default=DEFAULT_MAX_POINTS,
+                                     help_text='Number of points (grade) for a perfect submission')
+    max_file_size = models.IntegerField(default=DEFAULT_MAX_FILE_SIZE,
+                                        help_text='Maximum size of files uploaded by the students')
+    penalty = models.CharField(max_length=200, help_text='''Penalty formula for late submissions.
+                               Must be of this form <b>'[(p1, n1), (p2,n2), ...]'</b>. <br>
+                               Meaning: first n1 days subtract p1 points for each day,
+                                        next <b>n2</b> days subtract p2 points for each day, etc.''')
+    test_vms = models.ManyToManyField(TesterVM, help_text='TestVMs to use for this assignment')
 
     def __unicode__(self):
         return self.name
@@ -89,34 +97,62 @@ class Assignment(models.Model):
 
 class Submission(models.Model):
     '''Table of all submissions'''
-    user        = models.ForeignKey(User, help_text='User who submitted this')
+    STATE_NEW      = 'new'
+    STATE_ERROR    = 'error'
+    STATE_QUEUED   = 'queued'
+    STATE_CANCELED = 'canceled'
+    STATE_TESTED   = 'tested'
+    STATE_GRADED   = 'graded'
+    STATE_COPIED   = 'copied'
+
+    user        = models.ForeignKey(User, related_name='submissions', help_text='User who submitted this')
     assignment  = models.ForeignKey(Assignment, related_name='submissions',
                                     help_text='For which assignment is this submission')
     upload_time = models.DateTimeField(help_text='Date+time of upload')
-    upload_file = models.CharField(max_length=512, help_text='The path to the file uploaded by the student')
-    evaluated   = models.BooleanField(help_text='Have the evaluation results arrived?')
+    state       = models.CharField(max_length=20, help_text='Current state (new, queued, canceled, etc.)')
+    message     = models.CharField(default=None, max_length=512, blank=True,
+                                   help_text='Extended error messages')
     grade       = models.DecimalField(decimal_places=3, max_digits=10, blank=True,
                                       null=True, help_text='The grade of the submission')
-    def state(self):
-        if not self.evaluated:
-            return u'not-evaluated'
-        if self.grade:
-            return u'not-graded'
-        return unicode(self.grade)
-
     def __unicode__(self):
         return u'Submission(user=%s,assignment=%s,state=%s,upload-time=%s)' % (
-            self.user.username, self.assignment.name, self.state(), self.upload_time.strftime(_fmt))
+            self.user.username, self.assignment.name,
+            self.detailed_desc(), self.upload_time.strftime(_fmt))
+
+    def short_desc(self):
+        if self.state == Submission.STATE_GRADED:
+            return unicode(self.grade)
+        else:
+            return self.state
+
+    def detailed_desc(self):
+        if self.state == Submission.STATE_GRADED:
+            return unicode(self.grade)
+        elif len(self.message) == 0:
+            return self.state
+        else:
+            return u'%s: %s' % (self.state, self.message)
+
+    def root_path(self):
+        return 'submissions/%s/%s/%d' % (self.user.username, self.assignment.name, self.id)
+
+    def archive_path(self):
+        return os.path.join(self.root_path(), 'archive.zip')
+
+    def extracted_path(self):
+        return os.path.join(self.root_path(), 'extracted')
+
 
 class CurrentSubmission(models.Model):
     '''The user can upload the same homework multiple times. Only a
     single submission entry will be part of this table (normally the
     last one). In case the student wants to cancel a submission he can
     set the current submission to be a previous one.'''
-    user       = models.ForeignKey(User, help_text='User who submitted this')
-    assignment = models.ForeignKey(Assignment, related_name='current_submissions',
+    user       = models.ForeignKey(User, related_name='current_submission',
+                                   help_text='User who submitted this')
+    assignment = models.ForeignKey(Assignment, related_name='current_submission',
                                    help_text='For which assignment is this submission')
-    submission = models.ForeignKey(Submission, related_name='current_submissions',
+    submission = models.ForeignKey(Submission, related_name='current_submission',
                                    help_text='Submission for which this grade is given')
     class Meta:
         unique_together = ('user', 'assignment')
