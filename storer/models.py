@@ -53,7 +53,7 @@ class TesterVM(models.Model):
             return u'%s@%s' % (self.vm_name, self.host)
 
 
-def upload_tests_to(instance, filename):
+def upload_assignment_tests_to(instance, filename):
     return 'tests/%s_%s' % (instance.name, filename)
 
 
@@ -69,7 +69,7 @@ class Assignment(models.Model):
                             help_text='Keyword identifying the assignment (e.g. "backtracking-1")')
     deadline = models.DateTimeField(help_text='''Deadline for the assignment. Student can still upload
                                     homework after deadline, but a penalty is deducted (see bellow)''')
-    tests = models.FileField(upload_to=upload_tests_to, max_length=512,
+    tests = models.FileField(upload_to=upload_assignment_tests_to, max_length=512,
                                     help_text='Tests for this assignment')
     timeout_sec = models.PositiveIntegerField(default=DEFAULT_TIMEOUT_SEC,
                                               help_text='''Number of seconds of test run time after
