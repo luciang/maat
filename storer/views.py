@@ -10,10 +10,10 @@ from django.shortcuts import render_to_response, get_object_or_404
 from django.core.context_processors import csrf
 from django.db import transaction
 
-from maat.storer.models import Assignment, CurrentSubmission, Submission
+from maat.storer.models import Assignment, CurrentSubmission, Submission, SubmissionError
 from maat.storer.forms import AssignmentSubmissionForm
 from maat.storer.shortcuts import render_to, update_or_create
-from maat.storer.misc import save_file, save_submission_and_log_exception
+from maat.storer.misc import save_file, catch_exception_to_db
 from maat.storer.tasks import delayed_submission_processing
 
 @render_to('home.html')
@@ -38,12 +38,6 @@ def home(request):
     return { 'grades' : grades, 'assignments' : assignments }
 
 
-@save_submission_and_log_exception
-def _process_uploaded_submission(src_file, sub):
-    '''Save a the file and queue it for later processing'''
-    save_file(sub, src_file)
-    delayed_submission_processing.delay(sub.id)
-
 @render_to('assignment_form.html')
 @transaction.commit_on_success
 @login_required
@@ -56,7 +50,7 @@ def assignment_form(request, ass_name):
             try:
                 sub = Submission.objects.create(user=request.user, assignment=ass,
                                                 upload_time=datetime.datetime.now(),
-                                                state=Submission.STATE_NEW, message='', grade=None)
+                                                state=Submission.STATE_NEW, grade=None)
                 update_or_create(CurrentSubmission,
                                  { 'user': request.user, 'assignment': ass },
                                  { 'submission': sub })
@@ -66,7 +60,10 @@ def assignment_form(request, ass_name):
             # need to commit manually to prevent race with celery
             # see http://ask.github.com/celery/userguide/tasks.html#database-transactions
             transaction.commit()
-            _process_uploaded_submission(uploaded_file, sub=sub)
+
+            with catch_exception_to_db(sub):
+                save_file(sub, uploaded_file)
+                delayed_submission_processing.delay(sub.id)
 
             # response: redirect relative to the current assignment to
             # the page of the user: assignment/$(assignment-code)/$(user-name)
@@ -84,7 +81,8 @@ def assignment_form(request, ass_name):
 def submission(request, ass_name, username, subm_id):
     ass = get_object_or_404(Assignment, name=ass_name)
     sub = get_object_or_404(Submission, pk=subm_id)
-    return {'assignment' : ass, 'submission': sub }
+    errors = SubmissionError.objects.filter(submission=sub)
+    return {'assignment' : ass, 'submission': sub, 'errors': errors }
 
 
 @render_to('current_submission.html')
@@ -94,5 +92,6 @@ def current_submission(request, ass_name, username):
     user = get_object_or_404(User, username=username)
     csub = get_object_or_404(CurrentSubmission, user=user, assignment=ass)
     sub = csub.submission
-    return {'assignment' : ass, 'submission': sub }
+    errors = SubmissionError.objects.filter(submission=sub)
+    return {'assignment' : ass, 'submission': sub, 'errors': errors }
 

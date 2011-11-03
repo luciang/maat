@@ -11,11 +11,19 @@ submission.assignment={{submission.assignment}}<br>
 submission.upload_time={{submission.upload_time}}<br>
 submission.upload_file={{submission.archive_path}}<br>
 submission.state={{submission.state}}<br>
-submission.message={{submission.message}}<br>
 submission.short_desc={{submission.short_desc}}<br>
-submission.detailed_desc={{submission.detailed_desc}}<br>
 submission.grade={{submission.grade}}<br>
 
+{% if errors %}
+  <ul>
+  {% for error in errors %}
+  <li> 
+    err: {{ error.message }}
+    <pre>{{ error.traceback }} </pre>
+  </li>
+  {% endfor %}
+  </ul>
+{% endif %}
 
 </body>
 </html>

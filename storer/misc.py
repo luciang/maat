@@ -1,7 +1,10 @@
 import os
 import doctest
+from traceback import format_exc
+from contextlib import contextmanager
 
 from maat.storer.models import Submission
+from maat.storer.models import SubmissionError
 
 def humanize_bytes(size, precision=1):
     """Return a humanized string representation of a number of bytes.
@@ -67,36 +70,14 @@ def save_file(sub, src_file):
             dst_file.write(chunk)
 
 
-def save_submission_and_log_exception(fun):
-    '''Decorator that saves the error encountered while processing a
-    submission insiged Submission.message and sets it's state to
-    STATE_ERROR while making sure to save the submission object before
-    returning.
-    
-    It looks for two keyword arguments to get the submission:
-     * sub - a Submission instance
-     * sub_id - the Submission.id of an instance.
+@contextmanager
+def catch_exception_to_db(sub):
+    '''Log an exception by associating it with the given submission'''
+    try:
+        yield
+    except Exception as e:
+        sub.state = Submission.STATE_ERROR
+        sub.save()
+        SubmissionError.objects.create(submission=sub, message=e.message, traceback=format_exc())
+        # we're catching the exception, don't raise it!
 
-    NOTE:
-     * this decorator will replace sub_id with it's corresponding
-       'sub' instance in **kwargs
-     * both 'sub' and 'sub_id' must be sent as keyword arguments to
-       the decorated functions.
-    '''
-    def wrapper(*args, **kwargs):
-        print args
-        print kwargs
-        if 'sub' in kwargs:
-            sub = kwargs['sub']
-        else:
-            sub = Submission.objects.get(pk=kwargs['sub_id'])
-            del kwargs['sub_id']
-            kwargs['sub'] = sub
-        try:
-            fun(*args, **kwargs)
-        except Exception as e:
-            sub.state = Submission.STATE_ERROR
-            sub.message = e.message
-        finally:
-            sub.save()
-    return wrapper

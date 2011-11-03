@@ -110,28 +110,18 @@ class Submission(models.Model):
                                     help_text='For which assignment is this submission')
     upload_time = models.DateTimeField(help_text='Date+time of upload')
     state       = models.CharField(max_length=20, help_text='Current state (new, queued, canceled, etc.)')
-    message     = models.CharField(default=None, max_length=512, blank=True,
-                                   help_text='Extended error messages')
     grade       = models.DecimalField(decimal_places=3, max_digits=10, blank=True,
                                       null=True, help_text='The grade of the submission')
     def __unicode__(self):
         return u'Submission(user=%s,assignment=%s,state=%s,upload-time=%s)' % (
             self.user.username, self.assignment.name,
-            self.detailed_desc(), self.upload_time.strftime(_fmt))
+            self.short_desc(), self.upload_time.strftime(_fmt))
 
     def short_desc(self):
         if self.state == Submission.STATE_GRADED:
             return unicode(self.grade)
         else:
             return self.state
-
-    def detailed_desc(self):
-        if self.state == Submission.STATE_GRADED:
-            return unicode(self.grade)
-        elif len(self.message) == 0:
-            return self.state
-        else:
-            return u'%s: %s' % (self.state, self.message)
 
     def root_path(self):
         return 'submissions/%s/%s/%d' % (self.user.username, self.assignment.name, self.id)
@@ -159,6 +149,22 @@ class CurrentSubmission(models.Model):
     def __unicode__(self):
         return u'Current' + unicode(self.submission)
 
+
+
+class SubmissionError(models.Model):
+    '''Errors encountered while processing a submission'''
+    submission = models.ForeignKey(Submission, related_name='errors',
+                                   help_text='Submission that generated this error')
+    message    = models.CharField(max_length=512, help_text='A short message visible to all users')
+    traceback  = models.TextField(max_length=10024,
+                                  help_text='Traceback explaining error (only for admins to see)')
+
+
+class SubmissionTask(models.Model):
+    '''Unfinished tasks used by this submission'''
+    submission = models.ForeignKey(Submission, related_name='tasks',
+                                   help_text='Submission that started this task')
+    task_id = models.CharField(max_length=100, help_text='TODO:XXX: is charfield what I want?')
 
 
 #TODO: once a homework is graded, it no longer can be uploaded?
