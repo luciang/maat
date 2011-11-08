@@ -13,8 +13,9 @@ from django.db import transaction
 from maat.storer.models import Assignment, CurrentSubmission, Submission, SubmissionError
 from maat.storer.forms import AssignmentSubmissionForm
 from maat.storer.shortcuts import render_to, update_or_create
-from maat.storer.misc import save_file, catch_exception_to_db
+from maat.storer.misc import save_file, file_contents, catch_exception_to_db
 from maat.storer.tasks import delayed_submission_processing
+
 
 @render_to('home.html')
 def home(request):
@@ -93,5 +94,6 @@ def current_submission(request, ass_name, username):
     csub = get_object_or_404(CurrentSubmission, user=user, assignment=ass)
     sub = csub.submission
     errors = SubmissionError.objects.filter(submission=sub)
-    return {'assignment' : ass, 'submission': sub, 'errors': errors }
+    files = file_contents(sub.extracted_path())
+    return {'assignment' : ass, 'submission': sub, 'errors': errors, 'files': files }
 

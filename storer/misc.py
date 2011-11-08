@@ -55,6 +55,49 @@ def ensure_dir_exists(d):
             pass
 
 
+def files_in_dir(top):
+    '''Return a list of all files in a single directory (as relative to the directory)'''
+    ret = []
+    for (dirpath, dirnames, filenames) in os.walk(top):
+        reldir = dirpath[len(top)+1:]
+        ret.extend( [ os.path.join(reldir, f) for f in filenames ] )
+    return ret
+
+
+_text_characters = (b''.join(chr(i) for i in range(32, 127)) + b'\n\r\t\f\b')
+def is_plain_text(s):
+    '''Is the given string a binary or a plain-text?'''
+    if len(s) == 0:
+        # empty files are plain-text
+        return True
+
+    if len(s) > 512:
+        s = s[:512] # only use the first 512 bytes to check
+
+    if b'\x00' in s:
+        # Files with null bytes are binary
+        return False
+    nontext = s.translate(None, _text_characters)
+    if len(nontext) > 0.1 * len(s):
+        # If we find a few non-text characers, pretend we didn't
+        return False
+    return True
+
+
+
+def file_contents(topdir):
+    '''Return a dictionary with keys files inside the topdir and
+    values their contents (if plain-text)'''
+    ret = { }
+    for rel_name in files_in_dir(topdir):
+        fname = os.path.join(topdir, rel_name)
+        with open(fname, 'r') as f:
+            s = f.read()
+            if not is_plain_text(s):
+                s = 'raw binary file (contents not displayed)'
+            ret[rel_name] = s
+    return ret
+
 def save_file(sub, src_file):
     '''Save src_file to dst_fname'''
     dst_fname = sub.archive_path()

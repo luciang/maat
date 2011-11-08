@@ -1,4 +1,7 @@
 <html>
+<head>
+  <link href="{{ STATIC_URL }}pygmentize-default.css" media="screen" rel="stylesheet" type="text/css" />
+</head>
 <body>
 
 Assigment: {{assignment}} <br>
@@ -14,6 +17,8 @@ submission.state={{submission.state}}<br>
 submission.short_desc={{submission.short_desc}}<br>
 submission.grade={{submission.grade}}<br>
 
+
+Errors:
 {% if errors %}
   <ul>
   {% for error in errors %}
@@ -24,6 +29,23 @@ submission.grade={{submission.grade}}<br>
   {% endfor %}
   </ul>
 {% endif %}
+
+
+{% load code %}
+Files: {{files}}
+{% if files %}
+  <ul>
+  {% for fname,fcontents in files.items %}
+  <li>
+    <b> {{fname}} </b>
+    <code>
+      {{ fcontents|highlight:fname|safe }}
+    </code>
+  </li>
+  {% endfor %}
+  </ul>
+{% endif %}
+
 
 </body>
 </html>
