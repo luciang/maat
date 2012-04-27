@@ -1,11 +1,11 @@
 
-= About =
+# About #
 
 Maat: a prototype for a new system for automatic homework
       evaluation à la vmchecker
 
 
-= Dependencies =
+# Dependencies #
 
 * RabbitMQ:    sudo apt-get install rabbitmq-server
 * PostgreSQL:  sudo apt-get install postgresql
@@ -17,15 +17,15 @@ Maat: a prototype for a new system for automatic homework
 
 
 
-== Development only ==
+## Development only ##
 
 Install
     https://github.com/alex/django-fixture-generator
 
 
-= PostgreSQL config =
+# PostgreSQL config #
 
-== Allow local users to connect from the commandline ==
+## Allow local users to connect from the commandline ##
 See http://blog.deliciousrobots.com/2011/12/13/get-postgres-working-on-ubuntu-or-linux-mint/
 
 Edit /etc/postgresql/9.1/main/pg_hba.conf and change:
@@ -42,7 +42,7 @@ and reboot the service:
     sudo service postgresql restart
 
 
-== Create user/pass/db ==
+## Create user/pass/db ##
 
 For config settings check settings.py
 
@@ -60,13 +60,13 @@ For config settings check settings.py
     psql (9.1.3)
     Type "help" for help.
     
-    maatdb=> 
+    maatdb#> 
 
 
 
-= Initialization =
+# Initialization #
 
-== Development ==
+## Development ##
 
 Maat uses django-fixtures-generator to create testing/development data.
 
@@ -75,7 +75,7 @@ Maat uses django-fixtures-generator to create testing/development data.
     $ rm data.json
 
 
-== Production ==
+## Production ##
 
 Create the tables and create a superuser. The superuser will later add
 other users as teachers (staff) or students.
@@ -94,7 +94,7 @@ other users as teachers (staff) or students.
 
 
 
-= Run =
+# Run #
 
 Run the server and check the browser at http://127.0.0.1:8000/
 
@@ -102,7 +102,7 @@ Run the server and check the browser at http://127.0.0.1:8000/
 
 
 
-= TODO =
+# TODO #
 
 Check out these projects:
 * http://supervisord.org/
