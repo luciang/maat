@@ -176,10 +176,12 @@ class SubmissionTask(models.Model):
 
 class GradingComment(models.Model):
     '''All comments added by teachers while grading the homework'''
+    user             = models.ForeignKey(User, related_name='grading_comments',
+                                         help_text='User who created this grading comment')
     submission       = models.ForeignKey(Submission, related_name='grading_comments',
                                          help_text='Submission for which this grade is given')
-    file_name        = models.CharField(max_length=200, help_text='File being graded')
-    line             = models.PositiveIntegerField(help_text='Line number where comment should be included')
+    filename         = models.CharField(max_length=200, help_text='File being graded')
+    linenum          = models.PositiveIntegerField(help_text='Line number where comment should be included')
     comment          = models.CharField(max_length=200, help_text='Text of the comment')
     grade_adjustment = models.DecimalField(decimal_places=3, max_digits=10,
                                            help_text='Penalty/Bonus associated with comment')

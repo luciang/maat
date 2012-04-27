@@ -1,6 +1,53 @@
 <html>
 <head>
-  <link href="{{ STATIC_URL }}pygmentize-default.css" media="screen" rel="stylesheet" type="text/css" />
+
+
+  <link rel="stylesheet" type="text/css"
+	href="http://ajax.aspnetcdn.com/ajax/jquery.ui/1.8.16/themes/blitzer/jquery-ui.css" />
+  <script src="http://ajax.aspnetcdn.com/ajax/jQuery/jquery-1.7.min.js"></script>
+  <script src="http://ajax.aspnetcdn.com/ajax/jquery.ui/1.8.16/jquery-ui.min.js"></script>
+
+
+  <link rel="stylesheet" type="text/css" href="{{ STATIC_URL }}/pagedown/Markdown.css" />
+  <script type="text/javascript" src="{{ STATIC_URL }}/pagedown/Markdown.Converter.js"></script>
+  <script type="text/javascript" src="{{ STATIC_URL }}/pagedown/Markdown.Sanitizer.js"></script>
+  <script type="text/javascript" src="{{ STATIC_URL }}/pagedown/Markdown.Editor.js"></script>
+
+
+  <script type="text/javascript" src="{{ STATIC_URL }}/django-csrf-jquery.js"></script>
+
+
+  <script src="{{ STATIC_URL }}/codemirror-compressed.js"></script>
+  <script src="{{ STATIC_URL }}/codemirror2/lib/codemirror.js"></script>
+  <link rel="stylesheet"  type="text/css" href="{{ STATIC_URL }}/codemirror2/lib/codemirror.css">
+  <link rel="stylesheet"  type="text/css" href="{{ STATIC_URL }}/codemirror2/theme/default.css">
+  <link rel="stylesheet"  type="text/css" href="{{ STATIC_URL }}/codemirror2/theme/night.css">
+
+
+
+  <script src="{{ STATIC_URL }}/bubbletip/js/jQuery.bubbletip-1.0.6.js"></script>
+
+
+    <style type="text/css">
+    .CodeMirror-scroll {
+	height: auto;
+	overflow-y: hidden;
+	overflow-x: auto;
+	width: 100%
+    }
+
+    .CodeMirror-gutter {
+        width: 3em;
+        background: white;
+	cursor: hand;
+    }
+
+    .CodeMirror {
+        border: 1px solid #aaa;
+    }
+    </style>
+
+
 </head>
 <body>
 
@@ -31,21 +78,65 @@ Errors:
 {% endif %}
 
 
-{% load code %}
-Files: {{files}}
 {% if files %}
   <ul>
   {% for fname,fcontents in files.items %}
   <li>
-    <b> {{fname}} </b>
+    <b> {{fname}} </b> <br/>
     <code>
-      {{ fcontents|highlight:fname|safe }}
+      <!-- use fname to determine file type -->
+      <textarea id=code name=code>{{ fcontents }}</textarea>
     </code>
   </li>
   {% endfor %}
   </ul>
 {% endif %}
 
+
+    <div id="tip1_up" style="display:none;"><pre class="tip">{ deltaDirection: 'up' }</pre></div>
+    <a id="a1_up" href="#" class='zuzu'>above</a>
+
+    <div id='jquidia'>AAA</div>
+
+
+ <script>
+  function showDialog(){
+      $("#example").dialog();
+      return false;
+  }
+  </script>
+
+    <p>
+    <a href="" onclick="return showDialog()">Show the Dialog</a>
+    </p>
+ <div id="example" class="flora" title="This is my title">Im in a dialog!</div>
+
+
+    <script>
+    $(document).ready(function() {
+	$('.zuzu').bubbletip($('#tip1_up'));
+
+		  $('jquidia').dialog('open');
+    });
+
+
+
+      CodeMirror.fromTextArea(document.getElementById("code"), {
+	  mode: 'java',
+	  theme: 'night',
+          lineNumbers: true,
+	  readOnly: 'nocursor',
+          onGutterClick: function(cm, n) {
+              var info = cm.lineInfo(n);
+              if (info.markerText)
+		  cm.clearMarker(n);
+              else {
+		  cm.setMarker(n, "<span style=\"color: #900\">●</span> %N%");
+		  $("#example").clone().dialog();
+	      }
+          }
+      });
+    </script>
 
 </body>
 </html>

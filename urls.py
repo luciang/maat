@@ -16,6 +16,8 @@ urlpatterns = patterns('',
     (r'^assignment/(?P<ass_name>[^/]+)/(?P<username>[^/]+)/$', 'maat.storer.views.current_submission'),
     (r'^assignment/(?P<ass_name>[^/]+)/(?P<username>[^/]+)/(?P<subm_id>[^/]+)/$', 'maat.storer.views.submission'),
 
+
+    (r'^comments/$', 'maat.storer.views.comments'),
     # url(r'^maat/', include('maat.foo.urls')),
 
     # Uncomment the admin/doc line below to enable admin documentation:

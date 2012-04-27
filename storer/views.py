@@ -10,8 +10,8 @@ from django.shortcuts import render_to_response, get_object_or_404
 from django.core.context_processors import csrf
 from django.db import transaction
 
-from maat.storer.models import Assignment, CurrentSubmission, Submission, SubmissionError
-from maat.storer.forms import AssignmentSubmissionForm
+from maat.storer.models import Assignment, CurrentSubmission, Submission, SubmissionError, GradingComment
+from maat.storer.forms import AssignmentSubmissionForm, GradingCommentForm
 from maat.storer.shortcuts import render_to, update_or_create
 from maat.storer.misc import save_file, file_contents, catch_exception_to_db
 from maat.storer.tasks import delayed_submission_processing
@@ -97,3 +97,15 @@ def current_submission(request, ass_name, username):
     files = file_contents(sub.extracted_path())
     return {'assignment' : ass, 'submission': sub, 'errors': errors, 'files': files }
 
+
+@render_to('comment.html')
+@login_required
+def comments(request):
+    if request.method == 'POST':
+        grading_comment = GradingComment(user=request.user)
+        form = GradingCommentForm(request.POST, instance=grading_comment)
+        if form.is_valid():
+            data = form.cleaned_data
+            grading_comment = form.save()
+            return {'grading_comment': grading_comment }
+    raise Exception(form.as_p())
