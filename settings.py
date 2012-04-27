@@ -132,6 +132,8 @@ INSTALLED_APPS = (
     'django.contrib.admindocs',
 
 
+    # must be cloned & installed https://github.com/alex/django-fixture-generator
+    'fixture_generator',
 
     # maat specifics
     'maat.storer',
