@@ -71,7 +71,7 @@ For config settings check settings.py
 
 Maat uses django-fixtures-generator to create testing/development data.
 
-    $ ./manage.py generate_fixture storer.test_users > data.json
+    $ ./manage.py generate_fixture storer.test_all > data.json
     $ ./manage.py loaddata data.json
     $ rm data.json
 
