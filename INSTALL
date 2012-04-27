@@ -1,0 +1,110 @@
+
+= Dependencies =
+
+RabbitMQ
+
+	sudo apt-get install rabbitmq-server
+
+PostgreSQL
+
+	sudo apt-get install postgresql
+
+Django Celery
+
+       git clone https://github.com/ask/django-celery.git
+       cd django-celery && sudo pip install django-celery
+
+Django Extensions
+
+       sudo apt-get install python-django-debug-toolbar \
+	   python-pygments python-psycopg2
+
+== Development only ==
+
+Install
+	https://github.com/alex/django-fixture-generator
+
+= PostgreSQL config =
+
+== Allow local users to connect from the commandline ==
+See http://blog.deliciousrobots.com/2011/12/13/get-postgres-working-on-ubuntu-or-linux-mint/
+
+Edit /etc/postgresql/9.1/main/pg_hba.conf and change:
+
+    local   all             all                                     peer
+
+to
+
+    local   all             all                                     md5
+
+
+and reboot the service:
+
+    sudo service postgresql restart
+
+
+== Create user/pass/db ==
+
+For config settings check settings.py
+
+    # as as password use 'maatpass'
+    $ sudo -u postgres createuser -e -D -P -S -R maatuser
+    Enter password for new role: 
+    Enter it again: 
+    CREATE ROLE maatuser PASSWORD 'md53a7a62763e89bd00d7c06fe6c0a65f66' NOSUPERUSER NOCREATEDB NOCREATEROLE INHERIT LOGIN;
+
+    $ sudo -u postgres createdb -e -O maatuser maatdb
+    CREATE DATABASE maatdb OWNER maatuser;
+
+    $ psql -d maatdb -U maatuser -W
+    Password for user maatuser: 
+    psql (9.1.3)
+    Type "help" for help.
+    
+    maatdb=> 
+
+
+
+= Initialization =
+
+== Development ==
+
+Maat uses django-fixtures-generator to create testing/development data.
+
+    $ ./manage.py generate_fixture storer.test_users > data.json
+    $ ./manage.py loaddata data.json
+    $ rm data.json
+
+
+== Production ==
+
+Create the tables and create a superuser. The superuser will later add
+other users as teachers (staff) or students.
+
+
+    $ ./manage.py syncdb
+
+    You just installed Django's auth system, which means you don't have any superusers defined.
+    Would you like to create one now? (yes/no): yes
+    Username (Leave blank to use 'lucian'): superman
+    E-mail address: superman@cs.pub.ro
+    Password: <type-superuser-password>
+    Password (again): <retype-password>
+
+
+
+
+= Run =
+
+Run the server and check the browser at http://127.0.0.1:8000/
+
+    $ ./manage.py runserver 
+
+
+
+= TODO =
+
+Check out these projects:
+* http://supervisord.org/
+* http://hynek.me/articles/python-deployment-anti-patterns/
+
