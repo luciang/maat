@@ -1,28 +1,27 @@
 
+= About =
+
+Maat: a prototype for a new system for automatic homework
+      evaluation à la vmchecker
+
+
 = Dependencies =
 
-RabbitMQ
-
-	sudo apt-get install rabbitmq-server
-
-PostgreSQL
-
-	sudo apt-get install postgresql
-
-Django Celery
-
+* RabbitMQ:    sudo apt-get install rabbitmq-server
+* PostgreSQL:  sudo apt-get install postgresql
+* Django Extensions: sudo apt-get install python-django-debug-toolbar \
+                           python-pygments python-psycopg2
+* Django Celery: 
        git clone https://github.com/ask/django-celery.git
        cd django-celery && sudo pip install django-celery
 
-Django Extensions
 
-       sudo apt-get install python-django-debug-toolbar \
-	   python-pygments python-psycopg2
 
 == Development only ==
 
 Install
-	https://github.com/alex/django-fixture-generator
+    https://github.com/alex/django-fixture-generator
+
 
 = PostgreSQL config =
 
@@ -51,8 +50,8 @@ For config settings check settings.py
     $ sudo -u postgres createuser -e -D -P -S -R maatuser
     Enter password for new role: 
     Enter it again: 
-    CREATE ROLE maatuser PASSWORD 'md53a7a62763e89bd00d7c06fe6c0a65f66' NOSUPERUSER NOCREATEDB NOCREATEROLE INHERIT LOGIN;
-
+    CREATE ROLE maatuser PASSWORD 'md53a7a62763e89bd00d7c06fe6c0a65f66'
+           NOSUPERUSER NOCREATEDB NOCREATEROLE INHERIT LOGIN;
     $ sudo -u postgres createdb -e -O maatuser maatdb
     CREATE DATABASE maatdb OWNER maatuser;
 
@@ -84,7 +83,8 @@ other users as teachers (staff) or students.
 
     $ ./manage.py syncdb
 
-    You just installed Django's auth system, which means you don't have any superusers defined.
+    You just installed Django's auth system, which means you don't
+    have any superusers defined.
     Would you like to create one now? (yes/no): yes
     Username (Leave blank to use 'lucian'): superman
     E-mail address: superman@cs.pub.ro
